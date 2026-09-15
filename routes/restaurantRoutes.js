@@ -9,14 +9,12 @@ const {
 } = require('../controllers/restaurantController');
 const { protect } = require('../middleware/authMiddleware');
 
-// Standard REST endpoints for /api/restaurants
-// Public: GET /api/restaurants (Browse all)
-// Protected: POST /api/restaurants (Requires valid JWT token)
+
 router.route('/')
   .get(getAllRestaurants)
   .post(protect, createRestaurant);
 
-// Friendly aliases for verb-based URLs
+
 router.route('/createRestaurant')
   .get((req, res) => {
     res.status(200).json({
@@ -50,9 +48,7 @@ router.route('/getAllRestaurants')
 router.route('/getRestaurant/:id')
   .get(getRestaurantById);
 
-// Routes for /api/restaurants/:id (standard dynamic ID lookup)
-// Public: GET /api/restaurants/:id
-// Protected: PUT / DELETE /api/restaurants/:id (Requires valid JWT token)
+
 router.route('/:id')
   .get(getRestaurantById)
   .put(protect, updateRestaurant)

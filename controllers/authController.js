@@ -1,5 +1,6 @@
 const jwt = require('jsonwebtoken');
 const User = require('../models/userModel');
+const TokenBlacklist = require('../models/tokenBlacklistModel');
 
 // Generate signed JWT token
 const generateToken = (id) => {
@@ -139,8 +140,63 @@ const getMe = async (req, res) => {
   }
 };
 
+// @desc    Log user out / invalidate JWT token
+// @route   POST /api/auth/logout
+// @route   GET /api/auth/logout
+// @access  Public
+const logoutUser = async (req, res) => {
+  try {
+    let token;
+
+    // 1. Extract token from Authorization header if present
+    if (
+      req.headers.authorization &&
+      req.headers.authorization.startsWith('Bearer')
+    ) {
+      token = req.headers.authorization
+        .replace(/^Bearer\s+/i, '')
+        .replace(/^Bearer\s+/i, '')
+        .trim()
+        .replace(/^["']|["']$/g, '');
+    } else if (req.body && req.body.token) {
+      token = String(req.body.token).trim().replace(/^["']|["']$/g, '');
+    }
+
+    // 2. If token is present, blacklist it in the database
+    if (token) {
+      try {
+        await TokenBlacklist.updateOne(
+          { token },
+          { $setOnInsert: { token, createdAt: new Date() } },
+          { upsert: true }
+        );
+      } catch (dbErr) {
+        console.error('Error blacklisting token:', dbErr.message);
+      }
+    }
+
+    // 3. Clear cookie if cookies were ever set
+    res.cookie('token', 'none', {
+      expires: new Date(Date.now() + 5 * 1000),
+      httpOnly: true,
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: 'User logged out successfully',
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: 'Logout failed',
+      error: error.message,
+    });
+  }
+};
+
 module.exports = {
   registerUser,
   loginUser,
   getMe,
+  logoutUser,
 };

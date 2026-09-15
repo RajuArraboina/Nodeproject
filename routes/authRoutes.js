@@ -4,12 +4,15 @@ const {
   registerUser,
   loginUser,
   getMe,
+  logoutUser,
 } = require('../controllers/authController');
 const { protect } = require('../middleware/authMiddleware');
 
-// Auth routes
 router.post('/register', registerUser);
 router.post('/login', loginUser);
+router.route('/logout')
+  .post(logoutUser)
+  .get(logoutUser);
 router.get('/me', protect, getMe);
 
 module.exports = router;

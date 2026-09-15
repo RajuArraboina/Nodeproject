@@ -15,7 +15,7 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Root Route - Pure JSON API Overview
+// Root Route - Pure JSON REST API Overview
 app.get('/', (req, res) => {
   res.status(200).json({
     status: 'success',
@@ -24,6 +24,7 @@ app.get('/', (req, res) => {
       auth: {
         register: 'POST /api/auth/register',
         login: 'POST /api/auth/login',
+        logout: 'POST /api/auth/logout (or GET /api/auth/logout)',
         profile: 'GET /api/auth/me (Bearer Token Required)',
       },
       restaurants: {
@@ -44,9 +45,11 @@ app.use('/api/auth', authRoutes);
 app.use('/api/restaurants', restaurantRoutes);
 
 // Convenient root-level aliases
-const { registerUser, loginUser } = require('./controllers/authController');
+const { registerUser, loginUser, logoutUser } = require('./controllers/authController');
 app.post('/register', registerUser);
 app.post('/login', loginUser);
+app.post('/logout', logoutUser);
+app.get('/logout', logoutUser);
 
 const {
   getAllRestaurants,
@@ -94,6 +97,15 @@ app.use((req, res, next) => {
 
 // Global Error Handling Middleware
 app.use((err, req, res, next) => {
+  // Handle invalid JSON body syntax gracefully
+  if (err instanceof SyntaxError && err.status === 400 && 'body' in err) {
+    return res.status(400).json({
+      success: false,
+      message: 'Invalid JSON format in request body. Please check for trailing commas, single quotes, or missing quotes.',
+      error: err.message,
+    });
+  }
+
   console.error('Server error:', err.stack || err);
   res.status(err.status || 500).json({
     success: false,

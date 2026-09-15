@@ -1,5 +1,6 @@
 const jwt = require('jsonwebtoken');
 const User = require('../models/userModel');
+const TokenBlacklist = require('../models/tokenBlacklistModel');
 
 // Protect routes - verify Bearer token
 const protect = async (req, res, next) => {
@@ -10,7 +11,11 @@ const protect = async (req, res, next) => {
     req.headers.authorization &&
     req.headers.authorization.startsWith('Bearer')
   ) {
-    token = req.headers.authorization.split(' ')[1];
+    token = req.headers.authorization
+      .replace(/^Bearer\s+/i, '')
+      .replace(/^Bearer\s+/i, '')
+      .trim()
+      .replace(/^["']|["']$/g, '');
   }
 
   // Check if token exists
@@ -22,10 +27,20 @@ const protect = async (req, res, next) => {
   }
 
   try {
+    // Check if token has been invalidated (logged out)
+    const isBlacklisted = await TokenBlacklist.findOne({ token });
+    if (isBlacklisted) {
+      return res.status(401).json({
+        success: false,
+        message: 'You have been logged out. Please log in again.',
+      });
+    }
+
     // Verify token
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-    // Attach user to request (excluding password)
+    // Attach token and user to request (excluding password)
+    req.token = token;
     req.user = await User.findById(decoded.id);
 
     if (!req.user) {
