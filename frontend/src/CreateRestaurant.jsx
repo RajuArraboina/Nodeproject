@@ -1,160 +1,416 @@
-import { useState } from "react";
+import { useState } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
+import restaurantService from './services/restaurantService';
 
-const countries = [
-  "India",
-  "United States",
-  "United Kingdom",
-  "Canada",
-  "Australia",
-  "Japan",
-  "China",
-  "Mexico",
-  "Italy",
-  "France",
-  "Germany",
-  "Spain",
-  "United Arab Emirates",
-  "Saudi Arabia",
-  "South Africa",
+const cuisineOptions = [
+  'Indian',
+  'South Indian',
+  'Biryani',
+  'Mughlai',
+  'Italian',
+  'Chinese',
+  'Fast Food',
+  'Dessert',
+  'Beverage',
+  'Continental',
 ];
 
-function CreateRestaurant({ onBack, onCreated }) {
-  const [restaurant, setRestaurant] = useState({
-    name: "",
-    description: "",
-    country: "India",
-    rating: "",
+const menuCategories = ['Appetizer', 'Main Course', 'Dessert', 'Beverage', 'Side'];
+
+export default function CreateRestaurant() {
+  const navigate = useNavigate();
+
+  const [formData, setFormData] = useState({
+    name: '',
+    cuisine: 'Indian',
+    description: '',
+    phone: '',
+    email: '',
+    street: '',
+    city: 'Warangal',
+    state: 'Telangana',
+    zipCode: '506001',
+    rating: '4.5',
+    isOpen: true,
   });
-  const [menuItems, setMenuItems] = useState([]);
-  const [status, setStatus] = useState("");
+
+  const [menuItems, setMenuItems] = useState([
+    { name: '', description: '', price: '', category: 'Main Course', isVegetarian: false },
+  ]);
+
+  const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [serverError, setServerError] = useState('');
 
-  function updateRestaurant(field, value) {
-    setRestaurant((current) => ({ ...current, [field]: value }));
-  }
+  const handleChange = (e) => {
+    const { name, value, type, checked } = e.target;
+    setFormData((prev) => ({
+      ...prev,
+      [name]: type === 'checkbox' ? checked : value,
+    }));
+    if (errors[name]) {
+      setErrors((prev) => ({ ...prev, [name]: '' }));
+    }
+  };
 
-  function addFoodItem() {
-    setMenuItems((items) => [...items, { name: "", price: "", category: "Main Course" }]);
-  }
+  const handleMenuItemChange = (index, field, value) => {
+    setMenuItems((prev) => {
+      const updated = [...prev];
+      updated[index] = { ...updated[index], [field]: value };
+      return updated;
+    });
+  };
 
-  function updateFoodItem(index, field, value) {
-    setMenuItems((items) => items.map((item, itemIndex) => (
-      itemIndex === index ? { ...item, [field]: value } : item
-    )));
-  }
+  const handleAddMenuItem = () => {
+    setMenuItems((prev) => [
+      ...prev,
+      { name: '', description: '', price: '', category: 'Main Course', isVegetarian: false },
+    ]);
+  };
 
-  function removeFoodItem(index) {
-    setMenuItems((items) => items.filter((_, itemIndex) => itemIndex !== index));
-  }
+  const handleRemoveMenuItem = (index) => {
+    if (menuItems.length <= 1) return;
+    setMenuItems((prev) => prev.filter((_, i) => i !== index));
+  };
 
-  async function handleSubmit(event) {
-    event.preventDefault();
-    setStatus("");
+  const validate = () => {
+    const newErrors = {};
+    if (!formData.name.trim()) newErrors.name = 'Restaurant name is required';
+    if (!formData.cuisine.trim()) newErrors.cuisine = 'Cuisine is required';
+    if (formData.email && !/^\S+@\S+\.\S+$/.test(formData.email)) {
+      newErrors.email = 'Please enter a valid email address';
+    }
+    if (formData.rating && (Number(formData.rating) < 0 || Number(formData.rating) > 5)) {
+      newErrors.rating = 'Rating must be between 0 and 5';
+    }
+
+    // Validate menu items with filled names
+    menuItems.forEach((item, idx) => {
+      if (item.name.trim() && (!item.price || isNaN(item.price) || Number(item.price) <= 0)) {
+        newErrors[`menuPrice_${idx}`] = 'Valid price required';
+      }
+    });
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setServerError('');
+
+    if (!validate()) return;
+
     setIsSubmitting(true);
 
     try {
-      const incompleteItem = menuItems.find((item) => !item.name.trim() || item.price === "");
-      if (incompleteItem) {
-        throw new Error("Please complete every food item or remove the empty row");
-      }
+      const validMenuItems = menuItems
+        .filter((item) => item.name.trim() !== '')
+        .map((item) => ({
+          name: item.name.trim(),
+          description: item.description.trim(),
+          price: Number(item.price),
+          category: item.category,
+          isVegetarian: Boolean(item.isVegetarian),
+        }));
 
-      const token = localStorage.getItem("token");
-      if (!token) {
-        throw new Error("Please log in before creating a restaurant");
-      }
-
-      const response = await fetch("http://localhost:5000/api/restaurants", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
+      const payload = {
+        name: formData.name.trim(),
+        cuisine: formData.cuisine.trim(),
+        description: formData.description.trim(),
+        phone: formData.phone.trim(),
+        email: formData.email.trim(),
+        address: {
+          street: formData.street.trim(),
+          city: formData.city.trim(),
+          state: formData.state.trim(),
+          zipCode: formData.zipCode.trim(),
         },
-        body: JSON.stringify({
-          ...restaurant,
-          cuisine: restaurant.country,
-          rating: restaurant.rating === "" ? undefined : Number(restaurant.rating),
-          ...(menuItems.length > 0
-            ? { menuItems: menuItems.map((item) => ({ ...item, price: Number(item.price) })) }
-            : {}),
-        }),
-      });
-      const data = await response.json();
+        rating: Number(formData.rating) || 4.5,
+        isOpen: Boolean(formData.isOpen),
+        menuItems: validMenuItems,
+      };
 
-      if (!response.ok || data.success === false) {
-        throw new Error(data.message || "Restaurant creation failed");
+      const res = await restaurantService.create(payload);
+      const createdId = res.data?._id || res._id;
+      if (createdId) {
+        navigate(`/restaurants/${createdId}`);
+      } else {
+        navigate('/restaurants');
       }
-
-      setStatus(data.message || "Restaurant created successfully");
-      onCreated();
-    } catch (error) {
-      setStatus(error.message || "Unable to connect to the backend");
+    } catch (err) {
+      setServerError(err.message || 'Failed to create restaurant. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
-  }
+  };
 
   return (
-    <section className="login-panel restaurant-form-panel">
-      <div className="login-heading">
-        <p className="eyebrow">RESTAURANT OWNER</p>
-        <h1>Create restaurant</h1>
-        <p>Add your restaurant and menu for customers to discover.</p>
-      </div>
-      <form className="login-form" onSubmit={handleSubmit}>
-        <label>
-          Restaurant name
-          <input className="login-input" type="text" value={restaurant.name} onChange={(event) => updateRestaurant("name", event.target.value)} placeholder="e.g. Spice Garden" required />
-        </label>
-        <label>
-          Description
-          <textarea className="login-input" value={restaurant.description} onChange={(event) => updateRestaurant("description", event.target.value)} placeholder="Tell customers about your restaurant" rows="3" />
-        </label>
-        <label>
-          Country
-          <select className="login-input country-select" value={restaurant.country} onChange={(event) => updateRestaurant("country", event.target.value)} required>
-            {countries.map((country) => (
-              <option key={country} value={country}>{country}</option>
-            ))}
-          </select>
-        </label>
-        <label>
-          Rating
-          <input className="login-input" type="number" min="0" max="5" step="0.1" value={restaurant.rating} onChange={(event) => updateRestaurant("rating", event.target.value)} placeholder="e.g. 4.5" />
-        </label>
-        <div className="food-form-heading">
-          <p className="form-section-label">Food items (optional)</p>
-          <button className="add-food-button" type="button" onClick={addFoodItem}>+ Add food item</button>
+    <div className="form-page-container">
+      <div className="form-card-wrapper">
+        <div className="form-header">
+          <Link to="/restaurants" className="btn-back-link">← Back to Restaurants</Link>
+          <span className="form-badge">ADMINISTRATION</span>
+          <h1 className="form-title">Create New Restaurant</h1>
+          <p className="form-subtitle">Add a new partner restaurant and its signature menu items to the Warangal network.</p>
         </div>
-        {menuItems.map((item, index) => (
-          <div className="food-form-row" key={index}>
-            <label>
-              Food item name
-              <input className="login-input" type="text" value={item.name} onChange={(event) => updateFoodItem(index, "name", event.target.value)} placeholder="e.g. Chicken Biryani" />
-            </label>
-            <label>
-              Price
-              <input className="login-input" type="number" min="0" step="0.01" value={item.price} onChange={(event) => updateFoodItem(index, "price", event.target.value)} placeholder="e.g. 280" />
-            </label>
-            <label>
-              Category
-              <select className="login-input" value={item.category} onChange={(event) => updateFoodItem(index, "category", event.target.value)}>
-                <option>Appetizer</option>
-                <option>Main Course</option>
-                <option>Dessert</option>
-                <option>Beverage</option>
-              </select>
-            </label>
-            <button className="remove-food-button" type="button" onClick={() => removeFoodItem(index)}>Remove</button>
+
+        {serverError && (
+          <div className="alert-banner error" role="alert">
+            {serverError}
           </div>
-        ))}
-        <button className="primary-button" type="submit" disabled={isSubmitting}>
-          {isSubmitting ? "Creating..." : "Create restaurant"}
-        </button>
-        {status && <p className="login-status" role="status">{status}</p>}
-      </form>
-      <button className="back-button" type="button" onClick={onBack}>Back to restaurants</button>
-    </section>
+        )}
+
+        <form onSubmit={handleSubmit} className="admin-restaurant-form" noValidate>
+          {/* Section 1: Basic Information */}
+          <fieldset className="form-section">
+            <legend className="form-section-title">1. Basic Information</legend>
+
+            <div className="form-row">
+              <div className="form-group flex-2">
+                <label htmlFor="name">Restaurant Name *</label>
+                <input
+                  id="name"
+                  name="name"
+                  type="text"
+                  placeholder="e.g. Subani Dum Biryani House"
+                  value={formData.name}
+                  onChange={handleChange}
+                  className={errors.name ? 'input-error' : ''}
+                  required
+                />
+                {errors.name && <span className="error-text">{errors.name}</span>}
+              </div>
+
+              <div className="form-group flex-1">
+                <label htmlFor="cuisine">Cuisine *</label>
+                <select
+                  id="cuisine"
+                  name="cuisine"
+                  value={formData.cuisine}
+                  onChange={handleChange}
+                  className={errors.cuisine ? 'input-error' : ''}
+                  required
+                >
+                  {cuisineOptions.map((c) => (
+                    <option key={c} value={c}>{c}</option>
+                  ))}
+                </select>
+                {errors.cuisine && <span className="error-text">{errors.cuisine}</span>}
+              </div>
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="description">Description</label>
+              <textarea
+                id="description"
+                name="description"
+                rows="3"
+                placeholder="Briefly describe your culinary specialties, heritage cooking, ambiance..."
+                value={formData.description}
+                onChange={handleChange}
+              />
+            </div>
+
+            <div className="form-row">
+              <div className="form-group flex-1">
+                <label htmlFor="rating">Initial Rating (0 – 5)</label>
+                <input
+                  id="rating"
+                  name="rating"
+                  type="number"
+                  step="0.1"
+                  min="0"
+                  max="5"
+                  value={formData.rating}
+                  onChange={handleChange}
+                  className={errors.rating ? 'input-error' : ''}
+                />
+                {errors.rating && <span className="error-text">{errors.rating}</span>}
+              </div>
+
+              <div className="form-group flex-1 checkbox-group">
+                <label htmlFor="isOpen" className="checkbox-label">
+                  <input
+                    id="isOpen"
+                    name="isOpen"
+                    type="checkbox"
+                    checked={formData.isOpen}
+                    onChange={handleChange}
+                  />
+                  <span>Restaurant Is Open Now</span>
+                </label>
+              </div>
+            </div>
+          </fieldset>
+
+          {/* Section 2: Address & Contact */}
+          <fieldset className="form-section">
+            <legend className="form-section-title">2. Address & Contact Details</legend>
+
+            <div className="form-row">
+              <div className="form-group flex-2">
+                <label htmlFor="street">Street Address</label>
+                <input
+                  id="street"
+                  name="street"
+                  type="text"
+                  placeholder="e.g. Main Road, Naimnagar"
+                  value={formData.street}
+                  onChange={handleChange}
+                />
+              </div>
+
+              <div className="form-group flex-1">
+                <label htmlFor="city">City</label>
+                <input
+                  id="city"
+                  name="city"
+                  type="text"
+                  value={formData.city}
+                  onChange={handleChange}
+                />
+              </div>
+            </div>
+
+            <div className="form-row">
+              <div className="form-group flex-1">
+                <label htmlFor="phone">Phone Number</label>
+                <input
+                  id="phone"
+                  name="phone"
+                  type="tel"
+                  placeholder="e.g. +91 98765 43210"
+                  value={formData.phone}
+                  onChange={handleChange}
+                />
+              </div>
+
+              <div className="form-group flex-1">
+                <label htmlFor="email">Email Address</label>
+                <input
+                  id="email"
+                  name="email"
+                  type="email"
+                  placeholder="contact@restaurant.com"
+                  value={formData.email}
+                  onChange={handleChange}
+                  className={errors.email ? 'input-error' : ''}
+                />
+                {errors.email && <span className="error-text">{errors.email}</span>}
+              </div>
+            </div>
+          </fieldset>
+
+          {/* Section 3: Menu Items Builder */}
+          <fieldset className="form-section">
+            <div className="section-header-inline">
+              <legend className="form-section-title">3. Signature Menu Items</legend>
+              <button
+                type="button"
+                className="btn btn-secondary btn-sm"
+                onClick={handleAddMenuItem}
+              >
+                + Add Another Dish
+              </button>
+            </div>
+            <p className="form-hint">Add key dishes. If left blank, standard menu items for this cuisine will be auto-generated.</p>
+
+            <div className="menu-builder-list">
+              {menuItems.map((item, idx) => (
+                <div key={idx} className="menu-builder-card">
+                  <div className="builder-header">
+                    <span className="item-number">Dish #{idx + 1}</span>
+                    {menuItems.length > 1 && (
+                      <button
+                        type="button"
+                        className="btn-remove-item"
+                        onClick={() => handleRemoveMenuItem(idx)}
+                        title="Remove dish"
+                      >
+                        ✕ Remove
+                      </button>
+                    )}
+                  </div>
+
+                  <div className="form-row">
+                    <div className="form-group flex-2">
+                      <label>Dish Name</label>
+                      <input
+                        type="text"
+                        placeholder="e.g. Firewood Chicken Dum Biryani"
+                        value={item.name}
+                        onChange={(e) => handleMenuItemChange(idx, 'name', e.target.value)}
+                      />
+                    </div>
+
+                    <div className="form-group flex-1">
+                      <label>Price (₹)</label>
+                      <input
+                        type="number"
+                        placeholder="249"
+                        value={item.price}
+                        onChange={(e) => handleMenuItemChange(idx, 'price', e.target.value)}
+                        className={errors[`menuPrice_${idx}`] ? 'input-error' : ''}
+                      />
+                      {errors[`menuPrice_${idx}`] && (
+                        <span className="error-text">{errors[`menuPrice_${idx}`]}</span>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="form-row">
+                    <div className="form-group flex-1">
+                      <label>Category</label>
+                      <select
+                        value={item.category}
+                        onChange={(e) => handleMenuItemChange(idx, 'category', e.target.value)}
+                      >
+                        {menuCategories.map((cat) => (
+                          <option key={cat} value={cat}>{cat}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div className="form-group flex-2 checkbox-group">
+                      <label className="checkbox-label">
+                        <input
+                          type="checkbox"
+                          checked={item.isVegetarian}
+                          onChange={(e) => handleMenuItemChange(idx, 'isVegetarian', e.target.checked)}
+                        />
+                        <span>🌱 Vegetarian Dish</span>
+                      </label>
+                    </div>
+                  </div>
+
+                  <div className="form-group">
+                    <label>Description (Optional)</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. Cooked with long-grain basmati rice and secret spices"
+                      value={item.description}
+                      onChange={(e) => handleMenuItemChange(idx, 'description', e.target.value)}
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </fieldset>
+
+          {/* Form Submit Actions */}
+          <div className="form-actions">
+            <Link to="/restaurants" className="btn btn-ghost">Cancel</Link>
+            <button
+              type="submit"
+              className="btn btn-primary btn-large"
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? 'Creating Restaurant...' : '✓ Publish Restaurant'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
   );
 }
-
-export default CreateRestaurant;

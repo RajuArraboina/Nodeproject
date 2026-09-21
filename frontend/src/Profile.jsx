@@ -1,65 +1,86 @@
-import { useEffect, useState } from "react";
+import { Link, useNavigate } from 'react-router-dom';
+import { useAuth } from './context/AuthContext';
 
-function Profile({ onLogout }) {
-	const [profile, setProfile] = useState(null);
-	const [error, setError] = useState("");
+export default function Profile() {
+  const { user, isAdmin, logout } = useAuth();
+  const navigate = useNavigate();
 
-	useEffect(() => {
-		const token = localStorage.getItem("token");
+  const handleLogout = async () => {
+    await logout();
+    navigate('/');
+  };
 
-		if (!token) {
-			setError("Please log in to view your profile.");
-			return;
-		}
+  const completedOrders = Number(localStorage.getItem('completedOrderCount') || 0);
 
-		fetch("http://localhost:5000/api/auth/me", {
-			headers: { Authorization: `Bearer ${token}` },
-		})
-			.then(async (response) => {
-				const data = await response.json();
-				if (!response.ok || data.success === false) {
-					throw new Error(data.message || "Unable to load profile");
-				}
-				setProfile(data.data || data.user || data);
-			})
-			.catch((requestError) => setError(requestError.message));
-	}, []);
+  return (
+    <div className="profile-page-container">
+      <div className="profile-card-wrapper">
+        <div className="profile-hero">
+          <div className="profile-avatar">
+            {(user?.name || 'U').charAt(0).toUpperCase()}
+          </div>
+          <div className="profile-title-group">
+            <h1>{user?.name || 'Valued Customer'}</h1>
+            <p className="profile-email">{user?.email}</p>
+            <span className={`profile-role-badge ${isAdmin ? 'admin' : 'user'}`}>
+              {isAdmin ? '🛡️ Administrator' : '👤 Customer'}
+            </span>
+          </div>
+        </div>
 
-	function handleLogout() {
-		localStorage.removeItem("token");
-		onLogout();
-	}
+        <div className="profile-stats-grid">
+          <div className="profile-stat-box">
+            <span className="stat-number">{completedOrders}</span>
+            <span className="stat-label">Orders Placed</span>
+          </div>
+          <div className="profile-stat-box">
+            <span className="stat-number">Warangal</span>
+            <span className="stat-label">Delivery Zone</span>
+          </div>
+          <div className="profile-stat-box">
+            <span className="stat-number">Active</span>
+            <span className="stat-label">Account Status</span>
+          </div>
+        </div>
 
-	if (error) {
-		return <p className="state-message error-message">{error}</p>;
-	}
+        <div className="profile-details-section">
+          <h3>Account Information</h3>
+          <div className="profile-info-row">
+            <span className="info-label">Full Name</span>
+            <span className="info-value">{user?.name || 'Not provided'}</span>
+          </div>
+          <div className="profile-info-row">
+            <span className="info-label">Email Address</span>
+            <span className="info-value">{user?.email}</span>
+          </div>
+          <div className="profile-info-row">
+            <span className="info-label">Role Access</span>
+            <span className="info-value">{user?.role === 'admin' ? 'Restaurant Partner / Admin' : 'Standard Customer'}</span>
+          </div>
+          <div className="profile-info-row">
+            <span className="info-label">User ID</span>
+            <span className="info-value"><code>{user?._id || 'N/A'}</code></span>
+          </div>
+        </div>
 
-	if (!profile) {
-		return <p className="state-message">Loading profile...</p>;
-	}
-
-	return (
-		<section className="profile-panel">
-			<div className="profile-heading">
-				<p className="eyebrow">ACCOUNT</p>
-				<h1>Profile</h1>
-				<p>Your account details from the restaurant service.</p>
-			</div>
-			<div className="profile-details">
-				<div>
-					<span>Name</span>
-					<strong>{profile.name || profile.username || "Not provided"}</strong>
-				</div>
-				<div>
-					<span>Email</span>
-					<strong>{profile.email || "Not provided"}</strong>
-				</div>
-			</div>
-			<button className="logout-button" type="button" onClick={handleLogout}>
-				Logout
-			</button>
-		</section>
-	);
+        <div className="profile-actions-bar">
+          <Link to="/restaurants" className="btn btn-primary">
+            Browse Restaurants →
+          </Link>
+          {isAdmin && (
+            <Link to="/create-restaurant" className="btn btn-secondary">
+              + Add New Restaurant
+            </Link>
+          )}
+          <button
+            type="button"
+            className="btn btn-danger"
+            onClick={handleLogout}
+          >
+            Logout
+          </button>
+        </div>
+      </div>
+    </div>
+  );
 }
-
-export default Profile;

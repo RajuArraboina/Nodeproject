@@ -1,206 +1,332 @@
-// function RestaurantDetails() {
-//   return (
-//     <div>
-//       <h1>Restaurant Details</h1>
+import { useState, useEffect } from 'react';
+import { useParams, Link, useNavigate } from 'react-router-dom';
+import { restaurantService } from './services/restaurantService';
+import { useAuth } from './context/AuthContext';
+import MenuCard from './MenuCard';
+import Loading from './Loading';
+import ErrorMessage from './components/ErrorMessage';
+import { getCardImage } from './RestaurantCard';
 
-//       <h2>Raju Garden</h2>
-//       <p>Indian food restaurant</p>
-//       <p>Cuisine: Indian</p>
+const GST_RATE = 0.05;
+const DELIVERY_CHARGE = 40;
 
-//       <h3>Menu</h3>
+export default function RestaurantDetails() {
+  const { id } = useParams();
+  const navigate = useNavigate();
+  const { isAuthenticated } = useAuth();
 
-//       <p>Chicken Biryani - ₹250</p>
-//       <p>Paneer Butter Masala - ₹200</p>
-//     </div>
-//   );
-// }
-
-// export default RestaurantDetails;
-import { useEffect, useState } from "react";
-
-const foodImages = {
-  appetizer: "https://images.unsplash.com/photo-1547592180-85f173990554?auto=format&fit=crop&w=240&q=80",
-  "main course": "https://images.unsplash.com/photo-1563379091339-03246963d96c?auto=format&fit=crop&w=240&q=80",
-  dessert: "https://images.unsplash.com/photo-1551024506-0bccd828d307?auto=format&fit=crop&w=240&q=80",
-  beverage: "https://images.unsplash.com/photo-1551024709-8f23befc6f87?auto=format&fit=crop&w=240&q=80",
-  default: "https://images.unsplash.com/photo-1547592180-85f173990554?auto=format&fit=crop&w=240&q=80",
-};
-
-const cuisineImages = {
-  indian: "https://images.unsplash.com/photo-1585937421612-70a008356fbe?auto=format&fit=crop&w=700&q=85",
-  mughlai: "https://images.unsplash.com/photo-1601050690597-df0568f70950?auto=format&fit=crop&w=700&q=85",
-  japanese: "https://images.unsplash.com/photo-1579871494447-9811cf80d66c?auto=format&fit=crop&w=700&q=85",
-  mexican: "https://images.unsplash.com/photo-1552332386-f8dd00dc2f85?auto=format&fit=crop&w=700&q=85",
-  italian: "https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?auto=format&fit=crop&w=700&q=85",
-  mediterranean: "https://images.unsplash.com/photo-1540420773420-3366772f4999?auto=format&fit=crop&w=700&q=85",
-  default: "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=700&q=85",
-};
-
-const heroImages = [
-  { src: "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=420&q=85", alt: "Burger" },
-  { src: "https://images.unsplash.com/photo-1563379091339-03246963d96c?auto=format&fit=crop&w=420&q=85", alt: "Steamed dumplings" },
-  { src: "https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?auto=format&fit=crop&w=420&q=85", alt: "Pizza" },
-  { src: "https://images.unsplash.com/photo-1579871494447-9811cf80d66c?auto=format&fit=crop&w=420&q=85", alt: "Sushi" },
-  { src: "https://images.unsplash.com/photo-1552332386-f8dd00dc2f85?auto=format&fit=crop&w=420&q=85", alt: "Tacos" },
-];
-
-function getFoodImage(item) {
-  return item.image || foodImages[item.category?.toLowerCase()] || foodImages.default;
-}
-
-function getRestaurantImage(restaurant) {
-  const countryOrCuisine = restaurant.country || restaurant.cuisine;
-  return restaurant.image || cuisineImages[countryOrCuisine?.toLowerCase()] || cuisineImages.default;
-}
-
-function RestaurantDetails({ onCreateRestaurant }) {
-  const [restaurants, setRestaurants] = useState([]);
-  const [selectedRestaurant, setSelectedRestaurant] = useState(null);
-  const [heroIndex, setHeroIndex] = useState(0);
+  const [restaurant, setRestaurant] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+  const [error, setError] = useState('');
+  const [orderCounts, setOrderCounts] = useState({});
+  const [activeCategory, setActiveCategory] = useState('All');
+  const [menuSearch, setMenuSearch] = useState('');
+  const [orderNotification, setOrderNotification] = useState('');
 
   useEffect(() => {
-    fetch("http://localhost:5000/api/restaurants")
-      .then((response) => {
-        if (!response.ok) {
-          throw new Error("Failed to fetch restaurant data");
-        }
+    let isMounted = true;
+    setLoading(true);
+    setError('');
 
-        return response.json();
-      })
+    restaurantService.getById(id)
       .then((data) => {
-        console.log("Backend data:", data);
-        const restaurantList = Array.isArray(data)
-          ? data
-          : data.restaurants || data.data || [];
+        if (!isMounted) return;
+        if (!data || !data._id) {
+          throw new Error('Restaurant not found');
+        }
+        setRestaurant(data);
 
-        if (!restaurantList.length) {
-          throw new Error("No restaurants were returned by the backend");
+        // Check for preserved order
+        try {
+          const saved = JSON.parse(sessionStorage.getItem('pendingOrder') || 'null');
+          if (saved && saved.restaurantId === data._id && saved.orderCounts) {
+            setOrderCounts(saved.orderCounts);
+          }
+        } catch {
+          // ignore
         }
 
-        setRestaurants(restaurantList);
         setLoading(false);
       })
-      .catch((error) => {
-        console.error(error);
-        setError(error.message);
+      .catch((err) => {
+        if (!isMounted) return;
+        setError(err.message || 'Unable to load restaurant details.');
         setLoading(false);
       });
-  }, []);
 
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setHeroIndex((index) => (index + 1) % heroImages.length);
-    }, 3500);
+    return () => { isMounted = false; };
+  }, [id]);
 
-    return () => clearInterval(timer);
-  }, []);
+  const handleUpdateCount = (itemId, delta) => {
+    setOrderCounts((prev) => {
+      const current = prev[itemId] || 0;
+      const next = Math.max(0, current + delta);
+      const updated = { ...prev, [itemId]: next };
+      if (next === 0) delete updated[itemId];
 
-  function moveHeroImage(direction) {
-    setHeroIndex((index) => (index + direction + heroImages.length) % heroImages.length);
-  }
+      if (restaurant) {
+        sessionStorage.setItem('pendingOrder', JSON.stringify({
+          restaurantId: restaurant._id,
+          orderCounts: updated,
+        }));
+      }
+
+      return updated;
+    });
+  };
+
+  const menuItems = restaurant?.menuItems || [];
+  const categories = ['All', ...new Set(menuItems.map((it) => it.category || 'Main Course'))];
+
+  const filteredItems = menuItems.filter((item) => {
+    const matchesCat = activeCategory === 'All' || (item.category || 'Main Course') === activeCategory;
+    const matchesSearch = !menuSearch || item.name.toLowerCase().includes(menuSearch.toLowerCase()) || (item.description || '').toLowerCase().includes(menuSearch.toLowerCase());
+    return matchesCat && matchesSearch;
+  });
+
+  const cartItems = menuItems
+    .map((it) => ({
+      ...it,
+      key: it._id || it.name,
+      quantity: orderCounts[it._id || it.name] || 0,
+    }))
+    .filter((it) => it.quantity > 0);
+
+  const subtotal = cartItems.reduce((sum, it) => sum + (Number(it.price) * it.quantity), 0);
+  const gst = Math.round(subtotal * GST_RATE * 100) / 100;
+  const deliveryFee = subtotal > 0 ? DELIVERY_CHARGE : 0;
+  const grandTotal = subtotal + gst + deliveryFee;
+
+  const handleCheckout = () => {
+    if (!isAuthenticated) {
+      sessionStorage.setItem('pendingOrder', JSON.stringify({
+        restaurantId: restaurant._id,
+        orderCounts,
+        restoreAfterLogin: true,
+      }));
+      navigate('/login', { state: { from: { pathname: `/restaurants/${id}` } } });
+      return;
+    }
+
+    if (cartItems.length === 0) return;
+
+    const prevCount = Number(localStorage.getItem('completedOrderCount') || 0);
+    localStorage.setItem('completedOrderCount', String(prevCount + 1));
+    sessionStorage.removeItem('pendingOrder');
+
+    setOrderNotification(`🎉 Order successfully placed with ${restaurant.name}! Total: ₹${grandTotal.toFixed(2)}`);
+    setOrderCounts({});
+
+    setTimeout(() => setOrderNotification(''), 7000);
+  };
 
   if (loading) {
-    return <p className="state-message">Loading restaurant details...</p>;
+    return <Loading message="Loading restaurant menu & culinary details..." />;
   }
 
-  if (error) {
-    return <p className="state-message error-message">Error: {error}</p>;
+  if (error || !restaurant) {
+    return (
+      <div style={{ maxWidth: '600px', margin: '40px auto' }}>
+        <ErrorMessage
+          title="Restaurant Not Available"
+          message={error || 'The requested restaurant was not found.'}
+          onRetry={() => navigate('/restaurants')}
+        />
+      </div>
+    );
   }
+
+  const fullAddress = [
+    restaurant.address?.street,
+    restaurant.address?.city,
+    restaurant.address?.state,
+    restaurant.address?.zipCode,
+  ].filter(Boolean).join(', ') || 'Warangal, Telangana';
+
+  const coverImg = getCardImage(restaurant);
 
   return (
-    <section className="restaurant-details">
-      <div className="food-hero">
-        <img key={`bowl-${heroIndex}`} className="hero-food hero-bowl food-image-transition" src={heroImages[(heroIndex + 1) % heroImages.length].src} alt={heroImages[(heroIndex + 1) % heroImages.length].alt} />
-        <img key={`burger-${heroIndex}`} className="hero-food hero-burger food-image-transition" src={heroImages[heroIndex].src} alt={heroImages[heroIndex].alt} />
-        <div className="food-hero-copy">
-          <p className="eyebrow">SR RESTAURANTS</p>
-          <h1>Better food for<br />more people</h1>
-          <p>Discover new tastes, delivered right to your doorstep.</p>
+    <div className="restaurant-details-view">
+      {/* Navigation Breadcrumbs */}
+      <nav className="details-breadcrumb" aria-label="Breadcrumbs">
+        <Link to="/restaurants" className="breadcrumb-back">← All Restaurants</Link>
+        <div className="breadcrumb-path">
+          <Link to="/">Home</Link>
+          <span>/</span>
+          <Link to="/restaurants">Restaurants</Link>
+          <span>/</span>
+          <span className="current">{restaurant.name}</span>
         </div>
-        <img key={`pizza-${heroIndex}`} className="hero-food hero-pizza food-image-transition" src={heroImages[(heroIndex + 2) % heroImages.length].src} alt={heroImages[(heroIndex + 2) % heroImages.length].alt} />
-        <div className="hero-gallery-controls">
-          <button type="button" onClick={() => moveHeroImage(-1)} aria-label="Previous food image">&lt;</button>
-          <span>{heroIndex + 1} / {heroImages.length}</span>
-          <button type="button" onClick={() => moveHeroImage(1)} aria-label="Next food image">&gt;</button>
+      </nav>
+
+      {orderNotification && (
+        <div className="order-notification-banner" role="alert">
+          {orderNotification}
         </div>
-      </div>
-      <div className="details-heading">
-        <p className="eyebrow">EXPLORE THE COLLECTION</p>
-        <div className="details-title-row">
-          <h1>{selectedRestaurant ? selectedRestaurant.name : "Restaurants"}</h1>
-          {!selectedRestaurant && (
-            <button className="create-restaurant-button" type="button" onClick={onCreateRestaurant}>
-              + Create new restaurant
-            </button>
+      )}
+
+      {/* Restaurant Header Hero Banner */}
+      <section className="restaurant-showcase-banner">
+        <div className="showcase-cover">
+          <img src={coverImg} alt={restaurant.name} />
+          <div className="showcase-gradient-overlay" />
+        </div>
+
+        <div className="showcase-info">
+          <div className="showcase-badges">
+            <span className={`showcase-status ${restaurant.isOpen !== false ? 'open' : 'closed'}`}>
+              {restaurant.isOpen !== false ? '🟢 Open Now' : 'Closed'}
+            </span>
+            <span className="showcase-cuisine">🍽️ {restaurant.cuisine}</span>
+            <span className="showcase-rating">★ {Number(restaurant.rating || 4.8).toFixed(1)}</span>
+          </div>
+
+          <h1 className="showcase-name">{restaurant.name}</h1>
+          <p className="showcase-desc">{restaurant.description || 'Specialized in authentic flavours and freshly prepared dishes.'}</p>
+
+          <div className="showcase-meta-line">
+            <span>📍 {fullAddress}</span>
+            {restaurant.phone && <span>📞 {restaurant.phone}</span>}
+            <span>⚡ 25-35 mins</span>
+            <span>💰 ₹250 for two</span>
+          </div>
+        </div>
+      </section>
+
+      {/* Two Column Layout: Menu + Sticky Cart */}
+      <div className="details-split-layout">
+        {/* Left Column: Menu Items */}
+        <main className="menu-column">
+          <div className="menu-toolbar-panel">
+            <div className="menu-heading-group">
+              <h2>Menu</h2>
+              <span className="menu-badge-count">{menuItems.length} Dishes</span>
+            </div>
+
+            <input
+              type="text"
+              placeholder="Search dishes in menu..."
+              value={menuSearch}
+              onChange={(e) => setMenuSearch(e.target.value)}
+              className="menu-filter-input"
+            />
+          </div>
+
+          {/* Category Tabs */}
+          <div className="menu-cat-pills" role="tablist">
+            {categories.map((c) => (
+              <button
+                key={c}
+                type="button"
+                className={`menu-cat-btn ${activeCategory === c ? 'active' : ''}`}
+                onClick={() => setActiveCategory(c)}
+              >
+                {c}
+              </button>
+            ))}
+          </div>
+
+          {/* Menu Items List */}
+          {filteredItems.length > 0 ? (
+            <div className="menu-card-list">
+              {filteredItems.map((item) => {
+                const itemKey = item._id || item.name;
+                const qty = orderCounts[itemKey] || 0;
+                return (
+                  <MenuCard
+                    key={itemKey}
+                    item={item}
+                    quantity={qty}
+                    onAdd={() => handleUpdateCount(itemKey, 1)}
+                    onRemove={() => handleUpdateCount(itemKey, -1)}
+                  />
+                );
+              })}
+            </div>
+          ) : (
+            <div className="empty-state-card">
+              <p>No dishes found matching your current filter.</p>
+              <button
+                type="button"
+                className="btn btn-outline"
+                onClick={() => { setActiveCategory('All'); setMenuSearch(''); }}
+              >
+                View Full Menu
+              </button>
+            </div>
           )}
-        </div>
-        {selectedRestaurant && (
-          <button className="back-button" type="button" onClick={() => setSelectedRestaurant(null)}>
-            All restaurants
-          </button>
-        )}
-      </div>
+        </main>
 
-      <div className="restaurant-grid">
-        {(selectedRestaurant ? [selectedRestaurant] : restaurants).map((restaurant) => (
-          <article
-            className={`restaurant-panel ${selectedRestaurant ? "selected-restaurant" : "restaurant-select"}`}
-            key={restaurant._id}
-            onClick={() => !selectedRestaurant && setSelectedRestaurant(restaurant)}
-            onKeyDown={(event) => {
-              if (!selectedRestaurant && (event.key === "Enter" || event.key === " ")) {
-                setSelectedRestaurant(restaurant);
-              }
-            }}
-            role={selectedRestaurant ? undefined : "button"}
-            tabIndex={selectedRestaurant ? undefined : 0}
-          >
-            <img className="restaurant-image" src={getRestaurantImage(restaurant)} alt={restaurant.name} />
-            <div className="restaurant-panel-heading">
-              <h2>{restaurant.name}</h2>
-              <span className={restaurant.isOpen ? "status open" : "status"}>
-                {restaurant.isOpen ? "Open" : "Closed"}
-              </span>
-            </div>
-            <p className="restaurant-description">
-              {restaurant.description || "No description available"}
-            </p>
-            <div className="restaurant-meta">
-              <span>{restaurant.country || restaurant.cuisine}</span>
-              {restaurant.rating && <span>★ {restaurant.rating}</span>}
-              {restaurant.phone && <span>{restaurant.phone}</span>}
+        {/* Right Column: Sticky Cart Sidebar */}
+        <aside className="cart-column">
+          <div className="cart-card-sticky">
+            <div className="cart-card-header">
+              <h3>Your Order</h3>
+              <span className="cart-items-tag">{cartItems.length} items</span>
             </div>
 
-            {selectedRestaurant ? (
-              <>
-                <h3>Menu</h3>
-                <div className="menu-list">
-                  {restaurant.menuItems?.length ? (
-                    restaurant.menuItems.map((item) => (
-                      <div className="menu-item" key={item._id}>
-                        <img src={getFoodImage(item)} alt={item.name} />
-                        <div className="menu-item-info">
-                          <span>{item.name}</span>
-                          {item.description && <small>{item.description}</small>}
-                        </div>
-                        <strong>₹{item.price}</strong>
-                      </div>
-                    ))
-                  ) : (
-                    <p>No menu items available</p>
-                  )}
-                </div>
-              </>
+            {cartItems.length === 0 ? (
+              <div className="cart-empty-block">
+                <span className="cart-empty-graphic">🛍️</span>
+                <h4>Cart is Empty</h4>
+                <p>Select delicious dishes from the menu to start your order.</p>
+              </div>
             ) : (
-              <p className="select-hint">Click to view menu</p>
+              <>
+                <div className="cart-rows-list">
+                  {cartItems.map((it) => (
+                    <div className="cart-product-row" key={it.key}>
+                      <div className="cart-product-name">
+                        <span className={`dot-veg ${it.isVegetarian ? 'veg' : 'non-veg'}`} />
+                        <span>{it.name}</span>
+                      </div>
+                      <div className="cart-product-actions">
+                        <div className="cart-stepper">
+                          <button type="button" onClick={() => handleUpdateCount(it.key, -1)}>-</button>
+                          <span>{it.quantity}</span>
+                          <button type="button" onClick={() => handleUpdateCount(it.key, 1)}>+</button>
+                        </div>
+                        <span className="cart-product-price">₹{(Number(it.price) * it.quantity).toFixed(2)}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="cart-summary-breakdown">
+                  <div className="summary-line">
+                    <span>Subtotal</span>
+                    <span>₹{subtotal.toFixed(2)}</span>
+                  </div>
+                  <div className="summary-line">
+                    <span>GST (5%)</span>
+                    <span>₹{gst.toFixed(2)}</span>
+                  </div>
+                  <div className="summary-line">
+                    <span>Delivery Fee</span>
+                    <span>₹{deliveryFee.toFixed(2)}</span>
+                  </div>
+                  <div className="summary-line grand-total">
+                    <strong>Total to Pay</strong>
+                    <strong>₹{grandTotal.toFixed(2)}</strong>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  className="btn-order-checkout"
+                  onClick={handleCheckout}
+                >
+                  {isAuthenticated ? `Place Order • ₹${grandTotal.toFixed(2)}` : 'Sign In to Order'}
+                </button>
+
+                <p className="cart-micro-guarantee">
+                  🛡️ 100% Safe, Contactless & Hygienic Delivery
+                </p>
+              </>
             )}
-          </article>
-        ))}
+          </div>
+        </aside>
       </div>
-    </section>
+    </div>
   );
 }
-
-export default RestaurantDetails;
