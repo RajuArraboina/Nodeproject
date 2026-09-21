@@ -1,0 +1,1021 @@
+import { useEffect, useState } from "react";
+import SearchBar from "./SearchBar";
+
+const foodImages = {
+  appetizer: "https://images.unsplash.com/photo-1547592180-85f173990554?auto=format&fit=crop&w=300&q=80",
+  "main course": "https://images.unsplash.com/photo-1563379091339-03246963d96c?auto=format&fit=crop&w=300&q=80",
+  dessert: "https://images.unsplash.com/photo-1551024506-0bccd828d307?auto=format&fit=crop&w=300&q=80",
+  beverage: "https://images.unsplash.com/photo-1551024709-8f23befc6f87?auto=format&fit=crop&w=300&q=80",
+  biryani: "https://images.unsplash.com/photo-1631452180519-c014fe946bc7?auto=format&fit=crop&w=300&q=80",
+  paneer: "https://images.unsplash.com/photo-1603894584373-5ac82b2ae398?auto=format&fit=crop&w=300&q=80",
+  mutton: "https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=300&q=80",
+  fish: "https://images.unsplash.com/photo-1534939561126-855b8675edd7?auto=format&fit=crop&w=300&q=80",
+  chicken: "https://images.unsplash.com/photo-1604909052743-f7d2d3f5b6b3?auto=format&fit=crop&w=300&q=80",
+  dosa: "https://images.unsplash.com/photo-1668236543090-82eba5ee5976?auto=format&fit=crop&w=300&q=80",
+  default: "https://images.unsplash.com/photo-1547592180-85f173990554?auto=format&fit=crop&w=300&q=80",
+};
+
+const cuisineImages = {
+  indian: "https://images.unsplash.com/photo-1585937421612-70a008356fbe?auto=format&fit=crop&w=700&q=85",
+  mughlai: "https://images.unsplash.com/photo-1601050690597-df0568f70950?auto=format&fit=crop&w=700&q=85",
+  japanese: "https://images.unsplash.com/photo-1579871494447-9811cf80d66c?auto=format&fit=crop&w=700&q=85",
+  mexican: "https://images.unsplash.com/photo-1552332386-f8dd00dc2f85?auto=format&fit=crop&w=700&q=85",
+  italian: "https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?auto=format&fit=crop&w=700&q=85",
+  mediterranean: "https://images.unsplash.com/photo-1540420773420-3366772f4999?auto=format&fit=crop&w=700&q=85",
+  default: "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=700&q=85",
+};
+
+const heroImages = [
+  { src: "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=420&q=85", alt: "Burger" },
+  { src: "https://images.unsplash.com/photo-1547592180-85f173990554?auto=format&fit=crop&w=420&q=85", alt: "Indian food" },
+  { src: "https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?auto=format&fit=crop&w=420&q=85", alt: "Pizza" },
+  { src: "https://images.unsplash.com/photo-1579871494447-9811cf80d66c?auto=format&fit=crop&w=420&q=85", alt: "Sushi" },
+  { src: "https://images.unsplash.com/photo-1552332386-f8dd00dc2f85?auto=format&fit=crop&w=420&q=85", alt: "Tacos" },
+];
+
+const foodCategories = [
+  { name: "Biryani", image: foodImages.biryani },
+  { name: "Pizza", image: "https://images.unsplash.com/photo-1579751626657-72bc17010498?auto=format&fit=crop&w=240&q=85" },
+  { name: "Burger", image: "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=240&q=85" },
+  { name: "Cake", image: foodImages.dessert },
+  { name: "Desserts", image: "https://images.unsplash.com/photo-1551024506-0bccd828d307?auto=format&fit=crop&w=240&q=85" },
+  { name: "Shawarma", image: "https://images.unsplash.com/photo-1529006557810-274b9b2fc783?auto=format&fit=crop&w=240&q=85" },
+  { name: "Rolls", image: "https://images.unsplash.com/photo-1626700051175-6818013e1d4f?auto=format&fit=crop&w=240&q=85" },
+  { name: "Chinese", image: "https://images.unsplash.com/photo-1569718212165-3a8278d5f624?auto=format&fit=crop&w=240&q=85" },
+  { name: "Samosa", image: "https://images.unsplash.com/photo-1601050690597-df0568f70950?auto=format&fit=crop&w=240&q=85" },
+  { name: "Momo", image: "https://images.unsplash.com/photo-1496116218417-1a781b1c416c?auto=format&fit=crop&w=240&q=85" },
+  { name: "Shake", image: foodImages.beverage },
+  { name: "Salad", image: "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?auto=format&fit=crop&w=240&q=85" },
+  { name: "Dosa", image: foodImages.dosa },
+];
+
+const colorThemes = [
+  { id: "crimson", name: "Crimson Flame", class: "theme-crimson", color: "#e11d48" },
+  { id: "indigo", name: "Royal Twilight", class: "theme-indigo", color: "#4f46e5" },
+  { id: "emerald", name: "Gourmet Emerald", class: "theme-emerald", color: "#059669" },
+  { id: "sunset", name: "Sunset Amber", class: "theme-sunset", color: "#ea580c" },
+  { id: "midnight", name: "Midnight Velvet", class: "theme-midnight", color: "#1e1b4b" },
+];
+
+const dashboardPromos = [
+  {
+    title: "Order food & discover great restaurants",
+    description: "Fresh favourites from your local restaurants, delivered hot & fast in Warangal.",
+    badge: "FOOD DELIVERY",
+    offer: "UP TO 60% OFF",
+    themeClass: "theme-crimson",
+    accentColor: "#e11d48",
+    categoryFilter: "Biryani",
+    images: [
+      { name: "Hyderabadi Dum Biryani", image: foodImages.biryani },
+      { name: "Crispy Chicken Fry", image: foodImages.chicken },
+      { name: "Paneer Butter Masala", image: foodImages.paneer },
+      { name: "Spicy Mutton Boti", image: "https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=300&q=80" },
+    ],
+  },
+  {
+    title: "Big flavours, right at your doorstep",
+    description: "Find biryani, ghee dosa, woodfired pizza and more from restaurants near you.",
+    badge: "LOCAL FAVOURITES",
+    offer: "BESTSELLERS",
+    themeClass: "theme-indigo",
+    accentColor: "#4f46e5",
+    categoryFilter: "Dosa",
+    images: [
+      { name: "Special Ghee Karam Dosa", image: foodImages.dosa },
+      { name: "Steaming Idli Sambar", image: "https://images.unsplash.com/photo-1589301760014-d929f3979dbc?auto=format&fit=crop&w=300&q=80" },
+      { name: "Golden Crispy Samosa", image: "https://images.unsplash.com/photo-1601050690597-df0568f70950?auto=format&fit=crop&w=300&q=80" },
+      { name: "Subani Handi Biryani", image: foodImages.biryani },
+    ],
+  },
+  {
+    title: "Make every meal memorable",
+    description: "Explore something delicious today and order in a few clicks with live delivery tracking.",
+    badge: "DINE & DISCOVER",
+    offer: "TOP RATED",
+    themeClass: "theme-emerald",
+    accentColor: "#059669",
+    categoryFilter: "Pizza",
+    images: [
+      { name: "Woodfired Cheesy Pizza", image: "https://images.unsplash.com/photo-1513104890138-7c749659a591?auto=format&fit=crop&w=300&q=80" },
+      { name: "Gourmet Smashed Burger", image: "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=300&q=80" },
+      { name: "Royal Belgian Waffles", image: foodImages.dessert },
+      { name: "Chilled Mango Milkshake", image: foodImages.beverage },
+    ],
+  },
+  {
+    title: "Late night cravings & quick bites",
+    description: "Juicy shawarmas, crispy kathi rolls and comforting street snacks till late night.",
+    badge: "NIGHT CRAVINGS",
+    offer: "FLAT ₹100 OFF",
+    themeClass: "theme-sunset",
+    accentColor: "#ea580c",
+    categoryFilter: "Shawarma",
+    images: [
+      { name: "Chicken Shawarma Roll", image: "https://images.unsplash.com/photo-1529006557810-274b9b2fc783?auto=format&fit=crop&w=300&q=80" },
+      { name: "Egg & Paneer Kathi Roll", image: "https://images.unsplash.com/photo-1626700051175-6818013e1d4f?auto=format&fit=crop&w=300&q=80" },
+      { name: "Steamed Momos & Dip", image: "https://images.unsplash.com/photo-1496116218417-1a781b1c416c?auto=format&fit=crop&w=300&q=80" },
+      { name: "Wok Hakka Noodles", image: "https://images.unsplash.com/photo-1585032226651-759b368d7246?auto=format&fit=crop&w=300&q=80" },
+    ],
+  },
+  {
+    title: "Royal heritage dining & grand banquets",
+    description: "Celebrate together with authentic family platters and chef's heritage specialties.",
+    badge: "ROYAL BANQUET",
+    offer: "CHEF'S SPECIAL",
+    themeClass: "theme-midnight",
+    accentColor: "#312e81",
+    categoryFilter: "Indian",
+    images: [
+      { name: "Tandoori Kebab Platter", image: "https://images.unsplash.com/photo-1599488615731-7e5c2823ff28?auto=format&fit=crop&w=300&q=80" },
+      { name: "Firewood Dum Mutton", image: "https://images.unsplash.com/photo-1563379091339-03246963d96c?auto=format&fit=crop&w=300&q=80" },
+      { name: "Garlic Butter Naan", image: "https://images.unsplash.com/photo-1585937421612-70a008356fbe?auto=format&fit=crop&w=300&q=80" },
+      { name: "Gulab Jamun Sundae", image: foodImages.dessert },
+    ],
+  },
+];
+
+const trendingFoodTicker = [
+  { name: "Dum Biryani", tag: "₹249 • Hot Seller", image: foodImages.biryani, query: "Biryani" },
+  { name: "Ghee Dosa", tag: "₹99 • Crispy", image: foodImages.dosa, query: "Dosa" },
+  { name: "Cheesy Pizza", tag: "₹299 • 4.9★", image: "https://images.unsplash.com/photo-1513104890138-7c749659a591?auto=format&fit=crop&w=240&q=80", query: "Pizza" },
+  { name: "Butter Chicken", tag: "₹280 • Rich Gravy", image: foodImages.chicken, query: "Chicken" },
+  { name: "Steamed Momos", tag: "₹120 • Spicy Dip", image: "https://images.unsplash.com/photo-1496116218417-1a781b1c416c?auto=format&fit=crop&w=240&q=80", query: "Chinese" },
+  { name: "Smash Burger", tag: "₹179 • Loaded", image: "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=240&q=80", query: "Burger" },
+  { name: "Paneer Tikka", tag: "₹220 • Pure Veg", image: foodImages.paneer, query: "Paneer" },
+  { name: "Chicken Shawarma", tag: "₹149 • Juicy", image: "https://images.unsplash.com/photo-1529006557810-274b9b2fc783?auto=format&fit=crop&w=240&q=80", query: "Shawarma" },
+  { name: "Gulab Jamun", tag: "₹89 • Sweet", image: foodImages.dessert, query: "Desserts" },
+  { name: "Thick Shake", tag: "₹139 • Chilled", image: foodImages.beverage, query: "Beverage" },
+];;
+
+// Rich showcase imagery and signature dishes for right sidebar
+const restaurantProfiles = {
+  biryani: {
+    hero: "https://images.unsplash.com/photo-1563379091339-03246963d96c?auto=format&fit=crop&w=1200&q=85",
+    tag: "Firewood Dum Cooking",
+    dishes: [
+      { name: "Dum Biryani", image: "https://images.unsplash.com/photo-1563379091339-03246963d96c?auto=format&fit=crop&w=600&q=80" },
+      { name: "Spicy Boti Fry", image: "https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=600&q=80" },
+      { name: "Bagara Rice", image: "https://images.unsplash.com/photo-1604909052743-f7d2d3f5b6b3?auto=format&fit=crop&w=600&q=80" },
+      { name: "Meetha Sweet", image: "https://images.unsplash.com/photo-1551024506-0bccd828d307?auto=format&fit=crop&w=600&q=80" },
+    ],
+  },
+  tiffin: {
+    hero: "https://images.unsplash.com/photo-1668236543090-82eba5ee5976?auto=format&fit=crop&w=1200&q=85",
+    tag: "South Indian Tiffins",
+    dishes: [
+      { name: "Ghee Dosa", image: "https://images.unsplash.com/photo-1668236543090-82eba5ee5976?auto=format&fit=crop&w=600&q=80" },
+      { name: "Ghee Idli Vada", image: "https://images.unsplash.com/photo-1589301760014-d929f3979dbc?auto=format&fit=crop&w=600&q=80" },
+      { name: "Crispy Poori", image: "https://images.unsplash.com/photo-1601050690597-df0568f70950?auto=format&fit=crop&w=600&q=80" },
+      { name: "Filter Coffee", image: "https://images.unsplash.com/photo-1551024709-8f23befc6f87?auto=format&fit=crop&w=600&q=80" },
+    ],
+  },
+  mughlai: {
+    hero: "https://images.unsplash.com/photo-1599488615731-7e5c2823ff28?auto=format&fit=crop&w=1200&q=85",
+    tag: "Tandoori & Mughlai",
+    dishes: [
+      { name: "Tandoori Platter", image: "https://images.unsplash.com/photo-1599488615731-7e5c2823ff28?auto=format&fit=crop&w=600&q=80" },
+      { name: "Paneer Butter", image: "https://images.unsplash.com/photo-1603894584373-5ac82b2ae398?auto=format&fit=crop&w=600&q=80" },
+      { name: "Garlic Naan", image: "https://images.unsplash.com/photo-1585937421612-70a008356fbe?auto=format&fit=crop&w=600&q=80" },
+      { name: "Gulab Jamun", image: "https://images.unsplash.com/photo-1551024506-0bccd828d307?auto=format&fit=crop&w=600&q=80" },
+    ],
+  },
+  italian: {
+    hero: "https://images.unsplash.com/photo-1513104890138-7c749659a591?auto=format&fit=crop&w=1200&q=85",
+    tag: "Artisanal Woodfired Pizza",
+    dishes: [
+      { name: "Gourmet Pizza", image: "https://images.unsplash.com/photo-1513104890138-7c749659a591?auto=format&fit=crop&w=600&q=80" },
+      { name: "Creamy Pasta", image: "https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?auto=format&fit=crop&w=600&q=80" },
+      { name: "Garlic Bread", image: "https://images.unsplash.com/photo-1579751626657-72bc17010498?auto=format&fit=crop&w=600&q=80" },
+      { name: "Tiramisu", image: "https://images.unsplash.com/photo-1551024506-0bccd828d307?auto=format&fit=crop&w=600&q=80" },
+    ],
+  },
+  chinese: {
+    hero: "https://images.unsplash.com/photo-1585032226651-759b368d7246?auto=format&fit=crop&w=1200&q=85",
+    tag: "Indo-Chinese Wok Special",
+    dishes: [
+      { name: "Steamed Momos", image: "https://images.unsplash.com/photo-1496116218417-1a781b1c416c?auto=format&fit=crop&w=600&q=80" },
+      { name: "Hakka Noodles", image: "https://images.unsplash.com/photo-1585032226651-759b368d7246?auto=format&fit=crop&w=600&q=80" },
+      { name: "Chilli Paneer", image: "https://images.unsplash.com/photo-1569718212165-3a8278d5f624?auto=format&fit=crop&w=600&q=80" },
+      { name: "Crispy Rolls", image: "https://images.unsplash.com/photo-1626700051175-6818013e1d4f?auto=format&fit=crop&w=600&q=80" },
+    ],
+  },
+  burger: {
+    hero: "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=1200&q=85",
+    tag: "Smashed Burgers & Shakes",
+    dishes: [
+      { name: "Crispy Burger", image: "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=600&q=80" },
+      { name: "Loaded Fries", image: "https://images.unsplash.com/photo-1576107232684-1279f3908594?auto=format&fit=crop&w=600&q=80" },
+      { name: "Chicken Wings", image: "https://images.unsplash.com/photo-1604909052743-f7d2d3f5b6b3?auto=format&fit=crop&w=600&q=80" },
+      { name: "Thick Shake", image: "https://images.unsplash.com/photo-1551024709-8f23befc6f87?auto=format&fit=crop&w=600&q=80" },
+    ],
+  },
+  default: {
+    hero: "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=1200&q=85",
+    tag: "Chef's Heritage Delights",
+    dishes: [
+      { name: "Special Meal", image: "https://images.unsplash.com/photo-1547592180-85f173990554?auto=format&fit=crop&w=600&q=80" },
+      { name: "Rich Curry", image: "https://images.unsplash.com/photo-1585937421612-70a008356fbe?auto=format&fit=crop&w=600&q=80" },
+      { name: "Crispy Starter", image: "https://images.unsplash.com/photo-1601050690597-df0568f70950?auto=format&fit=crop&w=600&q=80" },
+      { name: "Royal Dessert", image: "https://images.unsplash.com/photo-1551024506-0bccd828d307?auto=format&fit=crop&w=600&q=80" },
+    ],
+  },
+};
+
+function getRestaurantCategoryKey(restaurant) {
+  if (!restaurant) return "default";
+  const text = `${restaurant.name || ""} ${restaurant.cuisine || ""} ${restaurant.description || ""}`.toLowerCase();
+  if (text.includes("biryani") || text.includes("subani") || text.includes("mutton") || text.includes("mandi") || text.includes("pot")) {
+    return "biryani";
+  }
+  if (text.includes("dosa") || text.includes("idli") || text.includes("tiffin") || text.includes("swagath") || text.includes("kakatiya") || text.includes("udipi") || text.includes("south")) {
+    return "tiffin";
+  }
+  if (text.includes("mughlai") || text.includes("tandoor") || text.includes("kebab") || text.includes("bbq") || text.includes("grill") || text.includes("spice") || text.includes("curry")) {
+    return "mughlai";
+  }
+  if (text.includes("pizza") || text.includes("italian") || text.includes("pasta")) {
+    return "italian";
+  }
+  if (text.includes("chinese") || text.includes("momo") || text.includes("noodle") || text.includes("roll") || text.includes("shawarma")) {
+    return "chinese";
+  }
+  if (text.includes("burger") || text.includes("cafe") || text.includes("bakery") || text.includes("sandwich")) {
+    return "burger";
+  }
+  return "default";
+}
+
+function getHeroBannerImage(restaurant) {
+  if (restaurant?.image) return restaurant.image;
+  const key = getRestaurantCategoryKey(restaurant);
+  return restaurantProfiles[key]?.hero || restaurantProfiles.default.hero;
+}
+
+function getRestaurantDishPreviews(restaurant) {
+  const key = getRestaurantCategoryKey(restaurant);
+  return restaurantProfiles[key]?.dishes || restaurantProfiles.default.dishes;
+}
+
+const GST_RATE = 0.05;
+const DELIVERY_CHARGE = 40;
+const COMPLETED_ORDERS_KEY = "completedOrderCount";
+
+function handleImageError(event) {
+  if (event.currentTarget.dataset.fallbackApplied) return;
+  event.currentTarget.dataset.fallbackApplied = "true";
+  event.currentTarget.src = foodImages.default;
+}
+
+function getFoodImage(item) {
+  if (item.image) {
+    return item.image;
+  }
+
+  const name = (item.name || "").toLowerCase();
+
+  if (name.includes("biryani")) return foodImages.biryani;
+  if (name.includes("paneer")) return foodImages.paneer;
+  if (name.includes("mutton") || name.includes("boti")) return foodImages.mutton;
+  if (name.includes("fish") || name.includes("prawn")) return foodImages.fish;
+  if (name.includes("chicken")) return foodImages.chicken;
+  if (name.includes("dosa") || name.includes("idli") || name.includes("vada") || name.includes("poori") || name.includes("bonda")) return foodImages.dosa;
+  if (name.includes("butter") || name.includes("masala") || name.includes("curry")) return foodImages.paneer;
+  if (name.includes("sweet") || name.includes("meetha") || name.includes("halwa") || name.includes("jamun")) return foodImages.dessert;
+
+  return foodImages[item.category?.toLowerCase()] || foodImages.default;
+}
+
+function getRestaurantImage(restaurant) {
+  if (restaurant.image) {
+    return restaurant.image;
+  }
+
+  const countryOrCuisine = restaurant.country || restaurant.cuisine;
+  const name = (restaurant.name || "").toLowerCase();
+
+  if (name.includes("biryani") || name.includes("subani") || name.includes("spice") || name.includes("kitchen")) {
+    return foodImages.biryani;
+  }
+  if (name.includes("paneer") || name.includes("veg") || name.includes("garden")) {
+    return foodImages.paneer;
+  }
+  if (name.includes("mutton") || name.includes("grill") || name.includes("bbq")) {
+    return foodImages.mutton;
+  }
+  if (name.includes("fish") || name.includes("seafood") || name.includes("marine")) {
+    return foodImages.fish;
+  }
+  if (name.includes("chicken") || name.includes("fried")) {
+    return foodImages.chicken;
+  }
+  if (name.includes("dosa") || name.includes("tiffin") || name.includes("swagath") || name.includes("south")) {
+    return foodImages.dosa;
+  }
+
+  return cuisineImages[countryOrCuisine?.toLowerCase()] || cuisineImages.default;
+}
+
+function RestaurantDetails({
+  canCreateRestaurant = false,
+  isAdmin = false,
+  isAuthenticated,
+  onLogin,
+  onCreateRestaurant,
+  selectedRestaurant: propSelectedRestaurant,
+  setSelectedRestaurant: propSetSelectedRestaurant,
+  homeClickCount = 0,
+}) {
+  const [restaurants, setRestaurants] = useState([]);
+  const [internalSelectedRestaurant, setInternalSelectedRestaurant] = useState(null);
+
+  const selectedRestaurant = propSelectedRestaurant !== undefined ? propSelectedRestaurant : internalSelectedRestaurant;
+  const setSelectedRestaurant = propSetSelectedRestaurant || setInternalSelectedRestaurant;
+  const hasAdminAccess = Boolean(isAdmin || canCreateRestaurant);
+
+  const [activeGalleryImage, setActiveGalleryImage] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [orderCounts, setOrderCounts] = useState({});
+  const [search, setSearch] = useState("");
+  const [country, setCountry] = useState("");
+  const [promoIndex, setPromoIndex] = useState(0);
+  const [selectedThemeId, setSelectedThemeId] = useState(() => localStorage.getItem("dashboardTheme") || "auto");
+  const [cardImageIndex, setCardImageIndex] = useState(0);
+
+  // Auto-scroll images in every promo item continuously
+  useEffect(() => {
+    const imgTimer = setInterval(() => {
+      setCardImageIndex((prev) => (prev + 1) % 4);
+    }, 2600);
+    return () => clearInterval(imgTimer);
+  }, []);
+
+  function handleSelectTheme(themeId) {
+    const nextTheme = selectedThemeId === themeId ? "auto" : themeId;
+    setSelectedThemeId(nextTheme);
+    localStorage.setItem("dashboardTheme", nextTheme);
+  }
+
+  function handleNextPromo() {
+    setPromoIndex((prev) => (prev + 1) % dashboardPromos.length);
+  }
+
+  function handlePrevPromo() {
+    setPromoIndex((prev) => (prev - 1 + dashboardPromos.length) % dashboardPromos.length);
+  }
+
+  const activeThemeClass = dashboardPromos[promoIndex]?.themeClass || "theme-crimson";
+
+  // When Home button or logo in navbar is clicked, reset filters and return to all restaurants
+  useEffect(() => {
+    if (homeClickCount > 0) {
+      setSearch("");
+      setCountry("");
+      setActiveGalleryImage(null);
+    }
+  }, [homeClickCount]);
+
+  // When selected restaurant changes, reset gallery image
+  useEffect(() => {
+    setActiveGalleryImage(null);
+  }, [selectedRestaurant?._id]);
+
+  useEffect(() => {
+    fetch("http://localhost:5000/api/restaurants")
+      .then(async (response) => {
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) {
+          throw new Error(data.message || "Restaurant database is unavailable");
+        }
+        return data;
+      })
+      .then((data) => {
+        const restaurantList = Array.isArray(data)
+          ? data
+          : data.restaurants || data.data || [];
+
+        if (!restaurantList.length) {
+          throw new Error("No restaurants found in the database");
+        }
+
+        setRestaurants(restaurantList);
+
+        // Only restore pending order if explicitly flagged from login redirect
+        const savedOrder = JSON.parse(sessionStorage.getItem("pendingOrder") || "null");
+        if (savedOrder?.restoreAfterLogin && savedOrder?.restaurantId) {
+          const savedRestaurant = restaurantList.find((restaurant) => restaurant._id === savedOrder.restaurantId);
+          if (savedRestaurant && savedOrder?.orderCounts) {
+            setSelectedRestaurant(savedRestaurant);
+            setOrderCounts(savedOrder.orderCounts);
+          }
+          sessionStorage.removeItem("pendingOrder");
+        }
+
+        setLoading(false);
+      })
+      .catch((error) => {
+        console.error(error);
+        setError(error.message);
+        setLoading(false);
+      });
+  }, []);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setPromoIndex((index) => (index + 1) % dashboardPromos.length);
+    }, 4500);
+
+    return () => clearInterval(timer);
+  }, []);
+
+  function updateOrderCount(itemId, change) {
+    setOrderCounts((current) => {
+      const nextValue = (current[itemId] || 0) + change;
+      const nextCounts = {
+        ...current,
+        [itemId]: nextValue > 0 ? nextValue : 0,
+      };
+
+      if (selectedRestaurant) {
+        sessionStorage.setItem("pendingOrder", JSON.stringify({
+          restaurantId: selectedRestaurant._id,
+          orderCounts: nextCounts,
+        }));
+      }
+
+      return nextCounts;
+    });
+  }
+
+  function placeOrder() {
+    if (!isAuthenticated) {
+      sessionStorage.setItem("pendingOrder", JSON.stringify({
+        restaurantId: selectedRestaurant?._id,
+        orderCounts,
+        restoreAfterLogin: true,
+      }));
+      if (onLogin) {
+        onLogin();
+      }
+      return;
+    }
+
+    const completedOrderCount = Number(localStorage.getItem(COMPLETED_ORDERS_KEY) || 0);
+    localStorage.setItem(COMPLETED_ORDERS_KEY, String(completedOrderCount + 1));
+    sessionStorage.removeItem("pendingOrder");
+    window.alert(`Order placed successfully for ${totalItems} ${totalItems === 1 ? "item" : "items"}. Total: ₹${formatCurrency(orderTotal)}`);
+    setOrderCounts({});
+  }
+
+  const filteredRestaurants = restaurants.filter((restaurant) => {
+    const searchText = search.trim().toLowerCase();
+    const countryText = country.toLowerCase();
+    const menuText = (restaurant.menuItems || []).map((item) => item.name).join(" ");
+    const searchableText = [restaurant.name, restaurant.cuisine, restaurant.country, restaurant.description, menuText]
+      .map((value) => String(value || "").toLowerCase())
+      .join(" ");
+
+    return (!searchText || searchableText.includes(searchText))
+      && (!countryText || searchableText.includes(countryText));
+  });
+
+  const orderItems = selectedRestaurant
+    ? (selectedRestaurant.menuItems || [])
+      .map((item) => ({
+        ...item,
+        itemKey: item._id || item.name,
+        quantity: orderCounts[item._id || item.name] || 0,
+      }))
+      .filter((item) => item.quantity > 0)
+    : [];
+
+  const totalItems = orderItems.reduce((total, item) => total + item.quantity, 0);
+  const subtotal = orderItems.reduce((total, item) => total + (Number(item.price) * item.quantity), 0);
+  const gst = Math.round(subtotal * GST_RATE * 100) / 100;
+  const hasCompletedOrder = Number(localStorage.getItem(COMPLETED_ORDERS_KEY) || 0) > 0;
+  const deliveryCharge = hasCompletedOrder ? DELIVERY_CHARGE : 0;
+  const orderTotal = subtotal + gst + deliveryCharge;
+
+  const formatCurrency = (amount) => new Intl.NumberFormat("en-IN", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(amount);
+
+  if (loading) {
+    return <p className="state-message">Loading restaurant details...</p>;
+  }
+
+  if (error) {
+    return <p className="state-message error-message">Error: {error}</p>;
+  }
+
+  return (
+    <section className="restaurant-details">
+      {/* Dashboard hero header (shown on home list view) */}
+      {!selectedRestaurant && (
+        <div className={`dashboard-hero ${activeThemeClass}`}>
+          {/* Top Status & Color Switcher Bar */}
+          <div className="dashboard-top-bar">
+            <div className="dashboard-live-badges">
+              <span className="live-pill">
+                <span className="live-dot" /> 20+ Warangal Kitchens Live
+              </span>
+              <span className="live-pill">⚡ 30m Express Delivery</span>
+              <span className="live-pill">⭐ 4.8 Top Rated</span>
+            </div>
+
+                      </div>
+
+          {/* Hero Copy with Carousel Navigation Arrows */}
+          <div className="dashboard-hero-nav-wrapper">
+            <button
+              type="button"
+              className="hero-nav-arrow prev"
+              onClick={handlePrevPromo}
+              aria-label="Previous promotion"
+            >
+              ❮
+            </button>
+
+            <div className="dashboard-hero-copy">
+              <p className="eyebrow">SR RESTAURANTS • WARANGAL</p>
+              <h1 key={promoIndex}>{dashboardPromos[promoIndex].title}</h1>
+              <p>{dashboardPromos[promoIndex].description}</p>
+
+              {hasAdminAccess && (
+                <div className="dashboard-admin-banner" aria-label="Admin controls">
+                  <span className="admin-tag">🛡️ Admin Access</span>
+                  <button
+                    type="button"
+                    className="hero-add-restaurant-btn"
+                    onClick={onCreateRestaurant}
+                  >
+                    + Add Restaurant
+                  </button>
+                </div>
+              )}
+
+              {/* Search Row */}
+              <div className="dashboard-search-row">
+                <div className="location-pill" aria-label="Current location">
+                  📍 <span>Warangal, Telangana • {restaurants.length} Restaurants</span>
+                </div>
+                <SearchBar search={search} setSearch={setSearch} />
+                <select
+                  className="country-filter"
+                  value={country}
+                  onChange={(event) => setCountry(event.target.value)}
+                  aria-label="Filter by country"
+                >
+                  <option value="">All countries</option>
+                  <option value="India">India</option>
+                  <option value="Italy">Italy</option>
+                  <option value="Japan">Japan</option>
+                  <option value="Mexico">Mexico</option>
+                  <option value="Mediterranean">Mediterranean</option>
+                </select>
+              </div>
+
+              {/* Quick Filter Tag Chips */}
+              <div className="dashboard-quick-tags" aria-label="Popular food filters">
+                {["All", "Biryani", "Dosa", "Pizza", "Burger", "Chinese", "Desserts", "Pure Veg"].map((tag) => {
+                  const isActive = (tag === "All" && !search) || (search.toLowerCase() === tag.toLowerCase());
+                  return (
+                    <button
+                      key={tag}
+                      type="button"
+                      className={`quick-tag-chip ${isActive ? "active" : ""}`}
+                      onClick={() => setSearch(tag === "All" ? "" : tag)}
+                    >
+                      {tag === "All" ? "🔥 All" : tag === "Pure Veg" ? "🥦 Pure Veg" : tag}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            <button
+              type="button"
+              className="hero-nav-arrow next"
+              onClick={handleNextPromo}
+              aria-label="Next promotion"
+            >
+              ❯
+            </button>
+          </div>
+
+          {/* Promo Cards Grid with Dynamic Multi-Image Reel */}
+          <div className="dashboard-promo-grid">
+            {dashboardPromos.slice(0, 3).map((promo, pIdx) => {
+              const activeImgObj = promo.images[cardImageIndex % promo.images.length];
+              return (
+                <article
+                  className="dashboard-promo-card"
+                  key={promo.badge}
+                  onClick={() => setSearch(promo.categoryFilter)}
+                  title={`Browse ${promo.badge}`}
+                >
+                  <div className="promo-card-info">
+                    <div>
+                      <span className="promo-card-offer">{promo.offer}</span>
+                      <h3 className="promo-card-badge" style={{ marginTop: "8px" }}>{promo.badge}</h3>
+                      <p className="promo-card-desc">{promo.description}</p>
+                    </div>
+                    <span className="promo-card-action">Order Now →</span>
+                  </div>
+
+                  {/* Auto-scrolling image reel with caption and indicators */}
+                  <div className="promo-card-visual">
+                    <div className="promo-image-dots">
+                      {promo.images.map((_, dotIdx) => (
+                        <span
+                          key={dotIdx}
+                          className={`promo-micro-dot ${(cardImageIndex % promo.images.length) === dotIdx ? "active" : ""}`}
+                        />
+                      ))}
+                    </div>
+
+                    <div className="promo-image-frame">
+                      {promo.images.map((imgItem, imgIdx) => {
+                        const isCurrent = (cardImageIndex % promo.images.length) === imgIdx;
+                        return (
+                          <img
+                            key={imgItem.name}
+                            onError={handleImageError}
+                            src={imgItem.image}
+                            alt={imgItem.name}
+                            className={`promo-slide-img ${isCurrent ? "active" : "inactive"}`}
+                          />
+                        );
+                      })}
+                    </div>
+
+                    <span className="promo-dish-tag">
+                      {activeImgObj.name}
+                    </span>
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+
+          {/* Infinite Auto-Scrolling Food Ticker Ribbon */}
+          <div className="dashboard-food-ticker" aria-label="Trending dishes in Warangal">
+            <div className="ticker-header">
+              <span>🔥 Trending Dishes in Warangal • Click any dish to view</span>
+              <span>⚡ Fresh & Fast</span>
+            </div>
+            <div className="ticker-track-container">
+              <div className="ticker-track">
+                {[...trendingFoodTicker, ...trendingFoodTicker].map((dish, dIdx) => (
+                  <div
+                    key={`${dish.name}-${dIdx}`}
+                    className="ticker-dish-card"
+                    onClick={() => setSearch(dish.query)}
+                    title={`Search for ${dish.name}`}
+                  >
+                    <img onError={handleImageError} src={dish.image} alt={dish.name} />
+                    <div className="ticker-dish-info">
+                      <span className="ticker-dish-name">{dish.name}</span>
+                      <span className="ticker-dish-sub">{dish.tag}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Carousel Dots */}
+          <div className="dashboard-dots" aria-label="Dashboard promotion controls">
+            {dashboardPromos.map((promo, index) => (
+              <button
+                type="button"
+                key={promo.badge}
+                className={index === promoIndex ? "active" : ""}
+                onClick={() => setPromoIndex(index)}
+                aria-label={`Show promotion ${index + 1}`}
+              />
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Page Heading & Navigation */}
+      <div className="details-heading">
+        <div>
+          <p className="eyebrow">{selectedRestaurant ? "RESTAURANT MENU & DETAILS" : `EXPLORE THE COLLECTION • ${restaurants.length} RESTAURANTS`}</p>
+          <div className="details-title-row">
+            <h1>{selectedRestaurant ? selectedRestaurant.name : `Restaurants (${restaurants.length})`}</h1>
+            {!selectedRestaurant && hasAdminAccess && (
+              <div className="admin-dashboard-actions">
+                <span className="admin-status-pill">🛡️ Admin</span>
+                <button
+                  className="create-restaurant-button"
+                  type="button"
+                  onClick={onCreateRestaurant}
+                  title="Add new restaurant (Admin only)"
+                >
+                  + Add / Create Restaurant
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+        {selectedRestaurant && (
+          <button
+            className="back-button"
+            type="button"
+            onClick={() => {
+              sessionStorage.removeItem("pendingOrder");
+              setSelectedRestaurant(null);
+              setActiveGalleryImage(null);
+            }}
+          >
+            ← Back to all restaurants
+          </button>
+        )}
+      </div>
+
+      {/* Category Strip (only in list view) */}
+      {!selectedRestaurant && (
+        <div className="food-category-strip" aria-label="Popular food categories">
+          {foodCategories.map((category) => (
+            <button
+              type="button"
+              className={`food-category ${search.toLowerCase() === category.name.toLowerCase() ? "food-category-active" : ""}`}
+              key={category.name}
+              onClick={() => setSearch(category.name)}
+            >
+              <img onError={handleImageError} src={category.image} alt={category.name} />
+              <span>{category.name}</span>
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* SELECTED RESTAURANT DEDICATED 2-COLUMN VIEW */}
+      {selectedRestaurant ? (
+        <div className="restaurant-detail-layout">
+          {/* LEFT COLUMN: Main Restaurant Information & Menu Items */}
+          <div className="restaurant-detail-main">
+            <article className="restaurant-panel selected-restaurant-card">
+              <div className="restaurant-panel-heading">
+                <div>
+                  <h2>{selectedRestaurant.name}</h2>
+                  <p className="restaurant-description">
+                    {selectedRestaurant.description || "Specialized in delicious authentic cuisine and local heritage specialties."}
+                  </p>
+                </div>
+                <span className={selectedRestaurant.isOpen ? "status open" : "status"}>
+                  {selectedRestaurant.isOpen ? "Open Now" : "Closed"}
+                </span>
+              </div>
+
+              <div className="restaurant-meta">
+                <span>🍽️ {selectedRestaurant.country || selectedRestaurant.cuisine || "Multi-Cuisine"}</span>
+                {selectedRestaurant.rating && <span>★ {selectedRestaurant.rating} (500+ reviews)</span>}
+                <span>⚡ 25-35 mins</span>
+                {selectedRestaurant.phone && <span>📞 {selectedRestaurant.phone}</span>}
+              </div>
+
+              <div className="menu-section-wrapper">
+                <div className="menu-section-header">
+                  <h3>Menu</h3>
+                  <span className="menu-count-badge">{selectedRestaurant.menuItems?.length || 0} Items</span>
+                </div>
+
+                <div className="menu-list">
+                  {selectedRestaurant.menuItems?.length ? (
+                    selectedRestaurant.menuItems.map((item) => {
+                      const itemKey = item._id || item.name;
+                      const quantity = orderCounts[itemKey] || 0;
+
+                      return (
+                        <div className="menu-item" key={itemKey}>
+                          <img onError={handleImageError} className="menu-item-image" src={getFoodImage(item)} alt={item.name} />
+                          <div className="menu-item-info">
+                            <span>{item.name}</span>
+                            {item.description && <small>{item.description}</small>}
+                          </div>
+                          <strong>₹{item.price}</strong>
+                          {quantity > 0 ? (
+                            <div className="menu-quantity-box" aria-label={`Quantity for ${item.name}`}>
+                              <button type="button" className="qty-button" onClick={() => updateOrderCount(itemKey, -1)} aria-label={`Decrease ${item.name}`}>-</button>
+                              <span>{quantity}</span>
+                              <button type="button" className="qty-button" onClick={() => updateOrderCount(itemKey, 1)} aria-label={`Increase ${item.name}`}>
+                                +
+                              </button>
+                            </div>
+                          ) : (
+                            <button
+                              type="button"
+                              className="menu-add-button"
+                              onClick={() => updateOrderCount(itemKey, 1)}
+                              aria-label={`Add ${item.name} to order`}
+                            >
+                              +
+                            </button>
+                          )}
+                        </div>
+                      );
+                    })
+                  ) : (
+                    <p className="no-items">No menu items available</p>
+                  )}
+                </div>
+              </div>
+            </article>
+          </div>
+
+          {/* RIGHT COLUMN: The Showcase Card (Food Imagery, Gallery, Badges) & Live Cart */}
+          <aside className="restaurant-detail-sidebar">
+            {/* 1. RESTAURANT HERO IMAGE SHOWCASE CARD */}
+            <div className="restaurant-showcase-card">
+              <div className="showcase-image-container">
+                <img
+                  onError={handleImageError}
+                  className="showcase-image"
+                  src={activeGalleryImage || getHeroBannerImage(selectedRestaurant)}
+                  alt={selectedRestaurant.name}
+                />
+                <div className="showcase-overlay">
+                  <div className="showcase-badges">
+                    <span className="showcase-pill live">🔥 Warangal Bestseller</span>
+                    <span className="showcase-pill hygiene">✓ 100% Hygienic</span>
+                  </div>
+                  <div className="showcase-caption">
+                    <h4>{selectedRestaurant.name}</h4>
+                    <p>{selectedRestaurant.cuisine || "Authentic Flavours"} • Fresh Ingredients</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Dish Photo Gallery Chips */}
+              <div className="showcase-dish-gallery">
+                <div className="gallery-header">
+                  <span>Food Preview</span>
+                  <small>Click to view</small>
+                </div>
+                <div className="gallery-chips">
+                  {getRestaurantDishPreviews(selectedRestaurant).map((dish, idx) => (
+                    <button
+                      key={idx}
+                      type="button"
+                      className={`gallery-chip ${(activeGalleryImage === dish.image) || (!activeGalleryImage && idx === 0) ? "active-chip" : ""}`}
+                      onClick={() => setActiveGalleryImage(dish.image)}
+                      title={dish.name}
+                    >
+                      <img src={dish.image} alt={dish.name} onError={handleImageError} />
+                      <span>{dish.name}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Service Highlights Grid */}
+              <div className="showcase-features">
+                <div className="feature-item">
+                  <span className="feature-icon">⚡</span>
+                  <div>
+                    <strong>25-35 Mins</strong>
+                    <small>Fast Delivery</small>
+                  </div>
+                </div>
+                <div className="feature-item">
+                  <span className="feature-icon">⭐</span>
+                  <div>
+                    <strong>{selectedRestaurant.rating || "4.6"} Rating</strong>
+                    <small>500+ Reviews</small>
+                  </div>
+                </div>
+                <div className="feature-item">
+                  <span className="feature-icon">🛵</span>
+                  <div>
+                    <strong>Free Delivery</strong>
+                    <small>First Order</small>
+                  </div>
+                </div>
+                <div className="feature-item">
+                  <span className="feature-icon">📍</span>
+                  <div>
+                    <strong>Warangal City</strong>
+                    <small>Doorstep Delivery</small>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* 2. DYNAMIC LIVE CART WIDGET */}
+            {orderItems.length > 0 ? (
+              <div className="order-summary sidebar-order-summary" aria-label="Order summary">
+                <div className="order-summary-heading">
+                  <div>
+                    <p className="form-section-label">🛒 Your Cart</p>
+                    <strong>{totalItems} {totalItems === 1 ? "item" : "items"}</strong>
+                  </div>
+                  <strong className="order-total">₹{formatCurrency(orderTotal)}</strong>
+                </div>
+
+                <div className="order-summary-items">
+                  {orderItems.map((item) => (
+                    <div className="order-summary-row" key={item.itemKey}>
+                      <span>{item.quantity} × {item.name}</span>
+                      <div className="cart-item-stepper">
+                        <button type="button" className="mini-qty-btn" onClick={() => updateOrderCount(item.itemKey, -1)} aria-label="Decrease">-</button>
+                        <span>{item.quantity}</span>
+                        <button type="button" className="mini-qty-btn" onClick={() => updateOrderCount(item.itemKey, 1)} aria-label="Increase">+</button>
+                        <strong>₹{new Intl.NumberFormat("en-IN").format(Number(item.price) * item.quantity)}</strong>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="order-bill" aria-label="Bill details">
+                  <div className="order-summary-row">
+                    <span>Item subtotal</span>
+                    <strong>₹{formatCurrency(subtotal)}</strong>
+                  </div>
+                  <div className="order-summary-row">
+                    <span>GST ({GST_RATE * 100}%)</span>
+                    <strong>₹{formatCurrency(gst)}</strong>
+                  </div>
+                  <div className="order-summary-row">
+                    <span>Delivery {hasCompletedOrder ? "charge" : "(first order)"}</span>
+                    <strong className={hasCompletedOrder ? "" : "delivery-free"}>
+                      {hasCompletedOrder ? `₹${formatCurrency(deliveryCharge)}` : "FREE"}
+                    </strong>
+                  </div>
+                  <div className="order-summary-row order-grand-total">
+                    <strong>Total payable</strong>
+                    <strong>₹{formatCurrency(orderTotal)}</strong>
+                  </div>
+                </div>
+
+                <button className="primary-button order-button" type="button" onClick={placeOrder}>
+                  {isAuthenticated ? "Proceed to Checkout" : "Login to Place Order"} → ₹{formatCurrency(orderTotal)}
+                </button>
+              </div>
+            ) : (
+              <div className="empty-cart-promo-card">
+                <div className="empty-cart-badge">🎉 Special Offer</div>
+                <h4>Looking for something delicious?</h4>
+                <p>Add your favorite items from {selectedRestaurant.name}'s menu to build your feast!</p>
+                <div className="empty-cart-coupon">
+                  <span>Special Discount:</span>
+                  <strong>WARANGAL20</strong>
+                  <small>Flat 20% OFF on all items</small>
+                </div>
+              </div>
+            )}
+          </aside>
+        </div>
+      ) : (
+        /* ALL RESTAURANTS GRID VIEW */
+        <div className="restaurant-grid">
+          {filteredRestaurants.map((restaurant) => (
+            <article
+              className="restaurant-panel restaurant-select"
+              key={restaurant._id}
+              onClick={() => {
+                setActiveGalleryImage(null);
+                setSelectedRestaurant(restaurant);
+              }}
+              onKeyDown={(event) => {
+                if (event.key === "Enter" || event.key === " ") {
+                  setActiveGalleryImage(null);
+                  setSelectedRestaurant(restaurant);
+                }
+              }}
+              role="button"
+              tabIndex={0}
+            >
+              <img onError={handleImageError} className="restaurant-image" src={getRestaurantImage(restaurant)} alt={restaurant.name} />
+              <div className="restaurant-panel-heading">
+                <h2>{restaurant.name}</h2>
+                <span className={restaurant.isOpen ? "status open" : "status"}>
+                  {restaurant.isOpen ? "Open" : "Closed"}
+                </span>
+              </div>
+              <p className="restaurant-description">
+                {restaurant.description || "No description available"}
+              </p>
+              <div className="restaurant-meta">
+                <span>{restaurant.country || restaurant.cuisine}</span>
+                {restaurant.rating && <span>★ {restaurant.rating}</span>}
+                {restaurant.phone && <span>{restaurant.phone}</span>}
+              </div>
+              <p className="select-hint">Click to view menu →</p>
+            </article>
+          ))}
+        </div>
+      )}
+
+      {!selectedRestaurant && !filteredRestaurants.length && (
+        <p className="state-message">No restaurants found for "{search}".</p>
+      )}
+    </section>
+  );
+}
+
+export default RestaurantDetails;

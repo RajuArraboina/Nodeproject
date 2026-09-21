@@ -11,7 +11,7 @@ const tokenBlacklistSchema = new mongoose.Schema(
     createdAt: {
       type: Date,
       default: Date.now,
-      expires: '30d', // Automatically purge documents after 30 days
+      expires: '30d', // Atomatically purge documents after 30 daysu
     },
   },
   {

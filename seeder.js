@@ -2,12 +2,23 @@ const mongoose = require('mongoose');
 require('dotenv').config();
 const Restaurant = require('./models/restaurantModel');
 const User = require('./models/userModel');
+const {
+  getDefaultMenuItemsByCuisine,
+  getDefaultDescriptionByCuisine,
+} = require('./utils/menuGenerator');
+const { warangalRestaurants } = require('./scripts/seedWarangalRestaurants');
 
 const users = [
   {
     name: 'Raju',
     email: 'raju@gmail.com',
     password: '12345678',
+    role: 'admin',
+  },
+  {
+    name: 'Sai',
+    email: 'sai@gmail.com',
+    password: '123456789',
     role: 'admin',
   },
 ];
@@ -70,6 +81,37 @@ const seedData = async () => {
       await User.deleteOne({ email: userData.email });
       await User.create(userData);
       console.log(`Successfully seeded User: ${userData.email}`);
+    }
+
+    // Auto-generate menu items for any restaurants currently with 0 menu items
+    const emptyMenuRestaurants = await Restaurant.find({
+      $or: [{ menuItems: { $exists: false } }, { menuItems: { $size: 0 } }],
+    });
+
+    for (const r of emptyMenuRestaurants) {
+      r.menuItems = getDefaultMenuItemsByCuisine(r.cuisine);
+      await r.save();
+      console.log(`Auto-generated ${r.menuItems.length} menu items for restaurant: ${r.name} (${r.cuisine})`);
+    }
+
+    // Auto-populate description for any restaurant missing it
+    const emptyDescRestaurants = await Restaurant.find({
+      $or: [{ description: { $exists: false } }, { description: '' }, { description: null }],
+    });
+
+    for (const r of emptyDescRestaurants) {
+      r.description = getDefaultDescriptionByCuisine(r.name, r.cuisine);
+      await r.save();
+      console.log(`Auto-populated description for: ${r.name}`);
+    }
+
+    // Seed famous Warangal restaurants
+    for (const restData of warangalRestaurants) {
+      const exists = await Restaurant.findOne({ name: restData.name });
+      if (!exists) {
+        await Restaurant.create(restData);
+        console.log(`Successfully seeded Warangal restaurant: ${restData.name}`);
+      }
     }
 
     console.log('Seeding completed successfully!');

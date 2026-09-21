@@ -30,11 +30,18 @@ app.get('/', (req, res) => {
       restaurants: {
         getAllRestaurants: 'GET /api/restaurants',
         getRestaurantById: 'GET /api/restaurants/:id',
-        createRestaurant: 'POST /api/restaurants (Bearer Token Required)',
+        createRestaurant: 'POST /api/restaurants (Bearer Token Required - auto-creates menu items if none provided)',
         updateRestaurant: 'PUT /api/restaurants/:id (Bearer Token Required)',
         deleteRestaurant: 'DELETE /api/restaurants/:id (Bearer Token Required)',
         filterByCuisine: 'GET /api/restaurants?cuisine=Indian',
+        filterByCity: 'GET /api/restaurants?city=Warangal',
         searchByNameOrDesc: 'GET /api/restaurants?search=Bistro',
+      },
+      menuManagement: {
+        autoGenerateAllMenus: 'POST /api/restaurants/auto-generate-all (Admin Token Required)',
+        autoGenerateForRestaurant: 'POST /api/restaurants/:id/menu/auto-generate (Admin Token Required)',
+        addMenuItem: 'POST /api/restaurants/:id/menu (Admin Token Required)',
+        deleteMenuItem: 'DELETE /api/restaurants/:id/menu/:itemId (Admin Token Required)',
       },
     },
   });
@@ -82,10 +89,12 @@ app.route('/deleteRestaurant/:id')
   .get(protect, deleteRestaurant);
 
 app.route('/getRestaurant/:id')
-  .get(getRestaurantById);
+  .get(getRestaurantById)
+  .post(getRestaurantById);
 
 app.route('/getAllRestaurants')
-  .get(getAllRestaurants);
+  .get(getAllRestaurants)
+  .post(getAllRestaurants);
 
 // 404 Route Handler - Pure JSON
 app.use((req, res, next) => {
